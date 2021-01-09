@@ -1,3 +1,6 @@
 [submodule "ext/restruct"]
 	path = ext/restruct
 	url = https://github.com/Shizmob/restruct
+[submodule "ext/pylzfse"]
+	path = ext/pylzfse
+	url = https://github.com/dimkr/pylzfse

@@ -7,7 +7,7 @@
 
 import functools
 from asn1crypto.core import (
-    Choice, Sequence, SequenceOf, SetOf,
+    Enumerated, Choice, Sequence, SequenceOf, SetOf,
     Integer, IA5String, OctetString, ParsableOctetString, Integer,
     Any
 )
@@ -34,9 +34,14 @@ class IMG4KeyBag(Sequence):
 class IMG4KeyBagSequence(SequenceOf):
     _child_spec = IMG4KeyBag
 
+class IMG4CompressionAlgorithm(Integer):
+    _map = {
+        1: 'lzfse',
+    }
+
 class IMG4Compression(Sequence):
     _fields = [
-        ('algorithm', Integer),
+        ('algorithm', IMG4CompressionAlgorithm),
         ('original_size', Integer),
     ]
 
@@ -171,10 +176,20 @@ if __name__ == '__main__':
                 print('  compression:')
                 print('    algo:', p['compression']['algorithm'])
                 print('    size:', p['compression']['original_size'])
+                algo = p['compression']['algorithm']
+            else:
+                algo = None
             print()
 
         if args.outfile:
-            args.outfile.write(p['data'])
+            if algo == 'lzfse':
+                import lzfse
+                data = lzfse.decompress(p['data'])
+            elif algo:
+                raise ValueError('unknown algorithm: {}'.format(algo))
+            else:
+                data = p['data']
+            args.outfile.write(data)
     if manifest:
         m = manifest.native
         if args.raw:

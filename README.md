@@ -3,6 +3,7 @@
 ## Requirements
 
 - `asn1crypto`
+- `pylzfse` (bundled in `./ext/pylzfse`)
 - Using `git clone --recursive`
 
 ## Usage
