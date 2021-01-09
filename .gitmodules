@@ -1,0 +1,3 @@
+[submodule "ext/restruct"]
+	path = ext/restruct
+	url = https://github.com/Shizmob/restruct
