@@ -37,9 +37,8 @@ if __name__ == '__main__':
     def to_nice(k, v):
         if k in formats:
             return restruct.format_value(restruct.parse(formats[k], v), str)
-        stripped = v.rstrip(b'\x00')
-        if stripped and isprint(stripped):
-            return stripped.decode('ascii')
+        if v and v[-1] == 0 and isprint(v[:-1]):
+            return v[:-1].decode('ascii')
         return restruct.format_bytes(v)
 
     def print_node(n, depth=0):
