@@ -41,16 +41,24 @@ if __name__ == '__main__':
             return v[:-1].decode('ascii')
         return restruct.format_bytes(v)
 
-    def print_node(n, depth=0):
+    def print_node(n, depth=0, last=False):
         space = ' ' * (depth * 2)
+        if last and not n.children:
+            leader = '    '
+        else:
+            leader = '|   '
+
         props = {x.name: x.value for x in n.properties}
         name = props.pop('name')
-        print(space + '+-', to_nice('name', name))
+        print(space + '+-', '[' + to_nice('name', name) + ']')
+
         for k, v in props.items():
-            print(space + '|   ', k + ':', to_nice(k, v))
+            print(space + leader, k + ':', to_nice(k, v))
+
         if n.children:
             print(space + '\\_,')
-            for c in n.children:
-                print_node(c, depth=depth + 1)
+            for i, c in enumerate(n.children, start=1):
+                print_node(c, depth=depth + 1, last=i == len(n.children))
+
     dt = restruct.parse(Node, open(sys.argv[1], 'rb'))
     print_node(dt)
