@@ -137,6 +137,7 @@ if __name__ == '__main__':
     for p in (IMG4, IMG4Manifest, IMG4Payload):
         try:
             img4 = p.load(contents)
+            img4.native  # trigger parsing
             break
         except Exception as e:
             errors[p] = e
