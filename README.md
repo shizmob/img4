@@ -1,5 +1,7 @@
 # img4
 
+Image4 dumper tool.
+
 ## Requirements
 
 - `asn1crypto`
@@ -20,6 +22,19 @@ optional arguments:
   -r, --raw   print raw parsed data
 ```
 
-## License
+# dt
+
+Apple device tree dumper tool.
+
+## Usage
+
+```
+usage: dt.py infile
+
+positional arguments:
+  infile      input device tree file
+```
+
+# License
 
 See `LICENSE.md`.
