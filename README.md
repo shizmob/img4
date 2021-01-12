@@ -35,6 +35,19 @@ positional arguments:
   infile      input device tree file
 ```
 
+# macho
+
+Mach-O dumper tool.
+
+## Usage
+
+```
+usage: macho.py infile
+
+positional arguments:
+  infile      input device tree file
+```
+
 # License
 
 See `LICENSE.md`.
