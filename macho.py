@@ -3,7 +3,11 @@
 import enum
 import uuid
 import restruct
-from restruct import Processed, Type, Struct, Data, Arr
+from restruct import Processed, Type, Struct, Data, Arr, Generic
+
+
+# Forward declaration
+MachO_ = Generic()
 
 
 class ULEB128(Type):
@@ -308,7 +312,7 @@ class FileSetEntry(Struct, partials={'R'}):
     file_offset: UInt(64) @ R.point
     entry_id:    UInt(64)
     name:        Str()
-    data:        Ref(...) @ R
+    data:        Ref(MachO_) @ R
 
 
 class CPUTypeFlags(Struct):
@@ -377,7 +381,7 @@ class MachO(Struct, partials={'C', 'S'}):
         context.user.cpu_type = self.cpu_type
         spec.cpu_sub_type.selector = (self.cpu_type, self.cpu_type_flags.is_64_bit)
 
-restruct.to_type(FileSetEntry).fields['data'].type = MachO
+MachO_.resolve(MachO)
 
 
 if __name__ == '__main__':
