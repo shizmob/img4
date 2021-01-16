@@ -378,7 +378,7 @@ if __name__ == '__main__':
         restruct.emit(FlattenedDeviceTree, dt, args.outfile)
     conv_parser = subparsers.add_parser('to-fdt', help='convert to flattened device tree')
     conv_parser.add_argument('infile', type=argparse.FileType('rb'), help='input file')
-    conv_parser.add_argument('outfile', type=argparse.FileType('wb'), help='output file')
+    conv_parser.add_argument('outfile', type=argparse.FileType('wb'), nargs='?', default=sys.stdout, help='output file')
     conv_parser.set_defaults(func=do_conv_adt)
 
     def do_conv_fdt(args):
@@ -387,7 +387,7 @@ if __name__ == '__main__':
         restruct.emit(AppleDeviceTree, dt, args.outfile)
     conv_fdt_parser = subparsers.add_parser('to-adt', help='convert to Apple device tree')
     conv_fdt_parser.add_argument('infile', type=argparse.FileType('rb'), help='input file')
-    conv_fdt_parser.add_argument('outfile', type=argparse.FileType('wb'), help='output file')
+    conv_fdt_parser.add_argument('outfile', type=argparse.FileType('wb'), nargs='?', default=sys.stdout.buffer, help='output file')
     conv_fdt_parser.set_defaults(func=do_conv_fdt)
 
     def do_conv_src(args):
@@ -396,7 +396,7 @@ if __name__ == '__main__':
         args.outfile.write(dts)
     conv_src_parser = subparsers.add_parser('to-src', help='convert to device tree source')
     conv_src_parser.add_argument('infile', type=argparse.FileType('rb'), help='input file')
-    conv_src_parser.add_argument('outfile', type=argparse.FileType('w'), help='output file')
+    conv_src_parser.add_argument('outfile', type=argparse.FileType('w'), nargs='?', default=sys.stdout, help='output file')
     conv_src_parser.set_defaults(func=do_conv_src)
 
     def do_diff(args):
