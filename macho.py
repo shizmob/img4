@@ -207,7 +207,7 @@ class ARMExceptionState64(Struct):
 class Thread(Struct, partials={'S'}):
     flavor: Enum(ThreadFlavor, UInt(32))
     size:   Processed(UInt(32), lambda x: x * 4, lambda x: x // 4) @ S.limit
-    state:  WithSize(Switch(fallback=Data(), options=THREAD_TYPES), exact=True) @ S
+    state:  Sized(Switch(fallback=Data(), options=THREAD_TYPES), exact=True) @ S
 
     def on_parse_flavor(self, spec, context):
         spec.state.type.selector = (context.user.cpu_type, self.flavor)
@@ -216,7 +216,7 @@ class Thread(Struct, partials={'S'}):
 class LinkEntry(Struct, generics={'T'}, partials={'R', 'S'}):
     offset: UInt(32) @ R.point
     size:   UInt(32) @ S.limit
-    data:   Ref(WithSize(T) @ S) @ R
+    data:   Ref(Sized(T) @ S) @ R
 
 lc(LoadCommandType.ChainedFixups)(LinkEntry[Data()])
 lc(LoadCommandType.FunctionStartAddresses)(LinkEntry[Arr(ULEB128(), stop_value=0)])
@@ -275,7 +275,7 @@ class SymbolTable(Struct, partials={'SyR', 'SyA', 'StL', 'StR', 'StC'}):
     string_offset: UInt(32) @ StR.point
     string_size:   UInt(32) @ StC.limit @ StL.size
     #symbols:       Ref(Arr(SymbolEntry[64]) @ SyA) @ SyR
-    #strings:       Ref(Lazy(WithSize(Arr(Str(), stop_value='')) @ StC) @ StL) @ StR
+    #strings:       Ref(Lazy(Sized(Arr(Str(), stop_value='')) @ StC) @ StL) @ StR
 
 @lc(LoadCommandType.DynamicSymbolTable)
 class DynamicSymbolTable(Struct):
@@ -359,7 +359,7 @@ class LoadCommand(Struct, partials={'T', 'S'}):
     type:  Enum(LoadCommandType, Bits(31)) @ T.selector
     vital: Bool(Bits(1))
     size:  Processed(UInt(32), lambda x: x - 8, lambda x: x + 8) @ S.limit
-    data:  WithSize(Switch(fallback=Data(), options=LOAD_COMMANDS) @ T, exact=True) @ S
+    data:  Sized(Switch(fallback=Data(), options=LOAD_COMMANDS) @ T, exact=True) @ S
 
 class MachO(Struct, partials={'C', 'S'}):
     magic:              UInt(32)
@@ -375,7 +375,7 @@ class MachO(Struct, partials={'C', 'S'}):
     command_size:       UInt(32) @ S.limit
     flags:              UInt(32)
     reserved:           UInt(32)
-    commands:           WithSize(Arr(LoadCommand) @ C) @ S
+    commands:           Sized(Arr(LoadCommand) @ C) @ S
 
     def on_parse_cpu_type_flags(self, spec, context):
         context.user.cpu_type = self.cpu_type
