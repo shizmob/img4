@@ -253,6 +253,48 @@ def to_dts(node, depth=0):
     return s
 
 
+def diff(a, b, path=[]):
+    a_props = {p.name: p.value for p in a.properties}
+    b_props = {p.name: p.value for p in b.properties}
+
+    for k in a_props:
+        p = '/' + '/'.join(path + [k])
+        if k not in b_props:
+            print('--- ' + p)
+            print(dump_value(k, a_props[k]))
+        else:
+            if a_props[k] != b_props[k]:
+                print('--- ' + p)
+                print(dump_value(k, a_props[k]))
+                print('+++ ' + p)
+                print(dump_value(k, b_props[k]))
+            del b_props[k]
+
+    for k in b_props:
+        p = '/' + '/'.join(path + [k])
+        print('+++ ' + p)
+        print(dump_value(k, b_props[k]))
+
+    b_children = {}
+    for c in b.children:
+        name = next(p.value for p in c.properties if p.name == 'name')
+        b_children.setdefault(name, []).append(c)
+    for c in a.children:
+        name = next(p.value for p in c.properties if p.name == 'name')
+        p = '/' + '/'.join(path + [name])
+        if name not in b_children:
+            print('--- ' + p)
+            print(dump(c))
+        else:
+            diff(c, b_children[name].pop(0), path + [name])
+
+    for name, cs in b_children.items():
+        for c in cs:
+            p = '/' + '/'.join(path + [name])
+            print('+++' + p)
+            print(dump(c))
+
+
 def regs(node, path):
     path = path[:]
     addrspaces = []
