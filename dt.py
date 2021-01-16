@@ -161,7 +161,7 @@ class DeviceTreeRegister(restruct.Struct, generics={'AddrSize', 'LengthSize'}):
 def dump_value(n, v):
     return restruct.format_value(v, str)
 
-def dump(node, depth=0, last=False):
+def dump(node, depth=0, last=True):
     space = ' ' * (depth * 2)
     if last and not node.children:
         leader = '    '
@@ -171,15 +171,17 @@ def dump(node, depth=0, last=False):
     props = {p.name: p.value for p in node.properties}
 
     name = props.get('name', '<unnamed>')
-    print(space + '+-', '[' + name + ']')
+    s = space + '+- [' + name + ']\n'
 
     for k, v in props.items():
-        print(space + leader, k + ':', dump_value(k, v))
+        s += space + leader + ' ' + k + ': ' + dump_value(k, v) + '\n'
 
     if node.children:
-        print(space + '\\_,')
+        s += space + '\\_,\n'
         for i, child in enumerate(node.children, start=1):
-            dump(child, depth=depth + 1, last=i == len(node.children))
+            s += dump(child, depth=depth + 1, last=i == len(node.children))
+
+    return s
 
 
 def to_adt(nodes, depth=0):
@@ -313,6 +315,7 @@ if __name__ == '__main__':
             infile.seek(0)
             return restruct.parse(AppleDeviceTree, infile)
 
+    import sys
     import argparse
 
     parser = argparse.ArgumentParser(description='process Apple (ADT) and Flattened (FDT) device tree files')
@@ -321,9 +324,10 @@ if __name__ == '__main__':
 
     def do_dump(args):
         dt = get_adt(args.infile)
-        dump(dt)
+        args.outfile.write(dump(dt))
     dump_parser = subparsers.add_parser('dump', help='visually show device tree')
     dump_parser.add_argument('infile', type=argparse.FileType('rb'), help='input file')
+    dump_parser.add_argument('outfile', type=argparse.FileType('w'), nargs='?', default=sys.stdout, help='output file')
     dump_parser.set_defaults(func=do_dump)
 
     def do_conv_adt(args):
