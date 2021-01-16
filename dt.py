@@ -39,6 +39,16 @@ def determine_type(k, v):
         return DeviceTreeType.U32
     return DeviceTreeType.Opaque
 
+def determine_reverse_type(k, v):
+    if k in PROPERTY_TYPES:
+        return PROPERTY_TYPES[k]
+    return {
+        type(None): DeviceTreeType.Empty,
+        int:   DeviceTreeType.U32,
+        str:   DeviceTreeType.String,
+        list:  DeviceTreeType.StringList,
+        bytes: DeviceTreeType.Opaque
+    }[type(v)]
 
 
 FDT_PROPERTY_TYPES = {
@@ -129,13 +139,7 @@ class ADTProperty(restruct.Struct, partials={'DataSize'}):
         self.value = restruct.parse(ADT_PROPERTY_TYPES[determine_type(self.name, self.value)], self.value)
 
     def on_emit_value(self, spec, context):
-        self.value = restruct.emit(ADT_PROPERTY_TYPES[{
-            type(None): DeviceTreeType.Empty,
-            int:   DeviceTreeType.U32,
-            str:   DeviceTreeType.String,
-            list:  DeviceTreeType.StringList,
-            bytes: DeviceTreeType.Opaque
-        }[type(self.value)]], self.value)
+        self.value = restruct.emit(ADT_PROPERTY_TYPES[determine_reverse_type(self.name, self.value)], self.value).getvalue()
 
 class ADTNode(restruct.Struct, recursive=True, partials={'PropArr', 'ChildArr'}):
     property_count: UInt(32) @ PropArr.count
