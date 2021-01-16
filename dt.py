@@ -158,6 +158,9 @@ class DeviceTreeRegister(restruct.Struct, generics={'AddrSize', 'LengthSize'}):
 
 
 
+def dump_value(n, v):
+    return restruct.format_value(v, str)
+
 def dump(node, depth=0, last=False):
     space = ' ' * (depth * 2)
     if last and not node.children:
@@ -167,11 +170,11 @@ def dump(node, depth=0, last=False):
 
     props = {p.name: p.value for p in node.properties}
 
-    name = props.get('name', b'<unnamed>').decode('utf-8')
+    name = props.get('name', '<unnamed>')
     print(space + '+-', '[' + name + ']')
 
     for k, v in props.items():
-        print(space + leader, k + ':', restruct.format_value(v, str))
+        print(space + leader, k + ':', dump_value(k, v))
 
     if node.children:
         print(space + '\\_,')
