@@ -217,7 +217,7 @@ def value_to_dts(val):
     if val is None:
         return None
     if isinstance(val, int):
-        return hex(val)
+        return '<' + hex(val) + '>'
     if isinstance(val, str):
         return '"' + val.replace('"', '\\"') + '"'
     if isinstance(val, list):
