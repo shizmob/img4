@@ -243,7 +243,7 @@ def to_dts(node, depth=0):
     for c in node.children:
         s += '\n' + to_dts(c, depth=depth + 1)
 
-    s += spacing + '}\n'
+    s += spacing + '};\n'
 
     return s
 
