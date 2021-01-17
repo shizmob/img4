@@ -302,6 +302,18 @@ def diff(a, b, path=[]):
             print(dump(c))
 
 
+def find(node, path, pname, pvalue):
+    props = {p.name: p.value for p in node.properties}
+
+    nname = props['name']
+    if props.get(pname, None) == pvalue:
+        print('/' + '/'.join(path + [nname]))
+        return
+
+    for c in node.children:
+        find(c, path + [nname], pname, pvalue)
+
+
 def regs(node, path):
     path = path[:]
     addrspaces = []
@@ -378,6 +390,20 @@ if __name__ == '__main__':
     dump_parser.add_argument('infile', type=argparse.FileType('rb'), help='input file')
     dump_parser.add_argument('outfile', type=argparse.FileType('w'), nargs='?', default=sys.stdout, help='output file')
     dump_parser.set_defaults(func=do_dump)
+
+    def do_find(args):
+        dt = get_adt(args.infile)
+        if '=' in args.property:
+            pn, pv = args.property.split('=')
+        else:
+            pn = 'name'
+            pv = args.property
+        for c in dt.children:
+            find(c, [], pn, pv)
+    find_parser = subparsers.add_parser('find', help='find node in device tree')
+    find_parser.add_argument('infile', type=argparse.FileType('rb'), help='input file')
+    find_parser.add_argument('property', help='name or property of node to find')
+    find_parser.set_defaults(func=do_find)
 
     def do_conv_fdt(args):
         adt = restruct.parse(AppleDeviceTree, args.infile)
