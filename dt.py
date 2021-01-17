@@ -279,66 +279,46 @@ def to_dts(node, depth=0):
     return s
 
 
-def show_node_changed(n, path, prefix, label, recursive=True):
-    props = {p.name: p.value for p in n.properties}
-    name = props['name']
-    p = '/' + '/'.join(path + [name])
-
-    print('--- ' + p)
-    print('+++ ' + p + ' (' + label + ')')
-    for k, v in props.items():
-        print(prefix + k + ': ' + dump_value(k, v))
-    print()
-
-    if recursive:
-        for c in n.children:
-            show_node_changed(c, path + [name], prefix, label)
-
 def diff(a, b, path=[]):
+    diffs = {tuple(path): None}
     a_props = {p.name: p.value for p in a.properties} if a else {}
     b_props = {p.name: p.value for p in b.properties} if b else {}
 
-    removed = []
-    added = []
+    premoved = []
+    padded = []
     for k in a_props:
         if k not in b_props:
-            removed.append((k, a_props[k]))
+            premoved.append((k, a_props[k]))
         else:
             if a_props[k] != b_props[k]:
-                removed.append((k, a_props[k]))
-                added.append((k, b_props[k]))
+                premoved.append((k, a_props[k]))
+                padded.append((k, b_props[k]))
             del b_props[k]
 
     for k in b_props:
-        added.append((k, b_props[k]))
-
-    if removed or added:
-        p = '/' + '/'.join(path)
-        print('--- ' + p)
-        print('+++ ' + p)
-        for (k, v) in removed:
-            print('-' + k + ': ' + dump_value(k, v))
-        for (k, v) in added:
-            print('+' + k + ': ' + dump_value(k, v))
-        print()
+        padded.append((k, b_props[k]))
 
     b_children = {}
     for c in (b.children if b else []):
         name = next(p.value for p in c.properties if p.name == 'name')
         b_children.setdefault(name, []).append(c)
 
+    cremoved = []
+    cadded = []
     for c in (a.children if a else []):
         props = {p.name: p.value for p in c.properties}
         name = props['name']
-        p = '/' + '/'.join(path + [name])
         if name not in b_children:
-            show_node_changed(c, path, '-', 'deleted')
+            cremoved.append(c)
         else:
-            diff(c, b_children[name].pop(0), path + [name])
+            diffs.update(diff(c, b_children[name].pop(0), path + [name]))
 
     for name, cs in b_children.items():
         for c in cs:
-            show_node_changed(c, path, '+', 'added')
+            cadded.append(c)
+
+    diffs[tuple(path)] = (premoved, padded, cremoved, cadded)
+    return diffs
 
 
 def find(node, pname, pvalue, path=[]):
@@ -465,6 +445,27 @@ if __name__ == '__main__':
     find_parser.add_argument('property', help='name or property of node to find')
     find_parser.set_defaults(func=do_find)
 
+    def do_diff_props(added, removed, path, label=None):
+        p = '/' + '/'.join(path)
+        print('--- ' + p)
+        print('+++ ' + p + (' (' + label + ')' if label else ''))
+        for (k, v) in removed:
+            print('-' + k + ': ' + dump_value(k, v))
+        for (k, v) in added:
+            print('+' + k + ': ' + dump_value(k, v))
+        print()
+    def do_diff_node(node, path, removed, recursive=True):
+        props = {p.name: p.value for p in node.properties}
+        name = props['name']
+
+        if removed:
+            do_diff_props({}, props.items(), path + (name,), label='removed')
+        else:
+            do_diff_props(props.items(), {}, path + (name,), label='added')
+
+        if recursive:
+            for child in node.children:
+                do_diff_node(child, path + (name,), removed=removed)
     def do_diff(args):
         a = get_adt(args.a)
         b = get_adt(args.b)
@@ -472,15 +473,17 @@ if __name__ == '__main__':
             path = args.path.lstrip('/').split('/')
             ap = get(a, path)
             bp = get(b, path)
-            if not ap:
-                a = None
-            else:
-                a = ap[0]
-            if not bp:
-                b = None
-            else:
-                b = bp[0]
-        diff(a, b)
+            a = ap[0] if ap else None
+            b = bp[0] if bp else None
+
+        diffs = diff(a, b)
+        for path, (premoved, padded, cremoved, cadded) in diffs.items():
+            if premoved or padded:
+                do_diff_props(padded, premoved, path)
+            for child in cremoved:
+                do_diff_node(child, path, removed=True)
+            for child in cadded:
+                do_diff_node(child, path, removed=False)
     diff_parser = subparsers.add_parser('diff', help='show the difference between two device trees')
     diff_parser.add_argument('a', type=argparse.FileType('rb'), help='first file')
     diff_parser.add_argument('b', type=argparse.FileType('rb'), help='second file')
