@@ -435,7 +435,7 @@ if __name__ == '__main__':
 
     def do_show(args):
         dt = get_adt(args.infile)
-        path = args.property.lstrip('/').split('/')
+        path = args.path.lstrip('/').split('/')
         for value in get(dt, path):
             if isinstance(value, ADTProperty):
                 print(dump_value(value.name, value.value))
@@ -445,7 +445,7 @@ if __name__ == '__main__':
 
     show_parser = subparsers.add_parser('show', help='get value of property or node in device tree')
     show_parser.add_argument('infile', type=argparse.FileType('rb'), help='input file')
-    show_parser.add_argument('property', help='property path to get')
+    show_parser.add_argument('path', help='path to get')
     show_parser.set_defaults(func=do_show)
 
     def do_find(args):
