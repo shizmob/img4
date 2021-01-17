@@ -29,10 +29,23 @@ Apple device tree dumper tool.
 ## Usage
 
 ```
-usage: dt.py infile
+usage: dt.py [-h] {dump,find,to-fdt,to-adt,to-src,diff,regs} ...
+
+process Apple (ADT) and Flattened (FDT) device tree files
 
 positional arguments:
-  infile      input device tree file
+  {dump,find,to-fdt,to-adt,to-src,diff,regs}
+                        subcommand
+    dump                visually show device tree
+    find                find node in device tree
+    to-fdt              convert to flattened device tree
+    to-adt              convert to Apple device tree
+    to-src              convert to device tree source
+    diff                visually show the difference between two device trees
+    regs                show calculated register ranges for given path
+
+optional arguments:
+  -h, --help            show this help message and exit
 ```
 
 # macho
