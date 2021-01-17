@@ -22,8 +22,6 @@ PROPERTY_TYPES = {
     '#address-cells': DeviceTreeType.U32,
 
     'name': DeviceTreeType.String,
-    'platform-name': DeviceTreeType.String,
-    'device_type':DeviceTreeType.String,
 }
 
 def isprint(x):
@@ -32,7 +30,7 @@ def isprint(x):
 def determine_type(k, v):
     if k in PROPERTY_TYPES:
         return PROPERTY_TYPES[k]
-    if v and (isprint(v) or (v[-1] == 0 and isprint(v[:-1]))):
+    if v and v[-1] == 0 and isprint(v[:-1]):
         return DeviceTreeType.String
     if len(v) == 4:
         # not a fan of this heuristic
@@ -47,7 +45,7 @@ def determine_reverse_type(k, v):
         int:   DeviceTreeType.U32,
         str:   DeviceTreeType.String,
         list:  DeviceTreeType.StringList,
-        bytes: DeviceTreeType.Opaque
+        bytes: DeviceTreeType.Opaque,
     }[type(v)]
 
 
@@ -57,7 +55,7 @@ FDT_PROPERTY_TYPES = {
     DeviceTreeType.U64:        restruct.UInt(64, order='be'),
     DeviceTreeType.Handle:     restruct.UInt(32, order='be'),
     DeviceTreeType.String:     restruct.Str(),
-    DeviceTreeType.StringList: restruct.Arr(restruct.Str(), stop_value=''),
+    DeviceTreeType.StringList: restruct.Arr(restruct.Str(type='c')),
     DeviceTreeType.Opaque:     restruct.Data(),
 }
 
@@ -125,7 +123,7 @@ ADT_PROPERTY_TYPES = {
     DeviceTreeType.U64:        restruct.UInt(64, order='le'),
     DeviceTreeType.Handle:     restruct.UInt(32, order='le'),
     DeviceTreeType.String:     restruct.Str(),
-    DeviceTreeType.StringList: restruct.Arr(restruct.Str(), stop_value=''),
+    DeviceTreeType.StringList: restruct.Arr(restruct.Str(type='c')),
     DeviceTreeType.Opaque:     restruct.Data(),
 }
 
@@ -192,7 +190,11 @@ def to_adt(nodes, depth=0):
     node = ADTNode(property_count=0, properties=[], child_count=0, children=[])
 
     assert nodes[0].token == FDTToken.NodeBegin
-    node.properties.append(ADTProperty(name='name', template=False, value=nodes[0].data))
+    if depth == 0 and not nodes[0].data:
+        name = 'device-tree'
+    else:
+        name = nodes[0].data
+    node.properties.append(ADTProperty(name='name', template=False, value=name))
 
     i = 1
     while True:
@@ -376,23 +378,22 @@ if __name__ == '__main__':
     dump_parser.add_argument('outfile', type=argparse.FileType('w'), nargs='?', default=sys.stdout, help='output file')
     dump_parser.set_defaults(func=do_dump)
 
-    def do_conv_adt(args):
+    def do_conv_fdt(args):
         adt = restruct.parse(AppleDeviceTree, args.infile)
         n, dt = to_fdt(adt)
         restruct.emit(FlattenedDeviceTree, dt, args.outfile)
-    conv_parser = subparsers.add_parser('to-fdt', help='convert to flattened device tree')
-    conv_parser.add_argument('infile', type=argparse.FileType('rb'), help='input file')
-    conv_parser.add_argument('outfile', type=argparse.FileType('wb'), nargs='?', default=sys.stdout, help='output file')
-    conv_parser.set_defaults(func=do_conv_adt)
-
-    def do_conv_fdt(args):
-        fdt = restruct.parse(FlattenedDeviceTree, args.infile)
-        _, dt = to_adt(fdt.structs)
-        restruct.emit(AppleDeviceTree, dt, args.outfile)
-    conv_fdt_parser = subparsers.add_parser('to-adt', help='convert to Apple device tree')
+    conv_fdt_parser = subparsers.add_parser('to-fdt', help='convert to flattened device tree')
     conv_fdt_parser.add_argument('infile', type=argparse.FileType('rb'), help='input file')
-    conv_fdt_parser.add_argument('outfile', type=argparse.FileType('wb'), nargs='?', default=sys.stdout.buffer, help='output file')
+    conv_fdt_parser.add_argument('outfile', type=argparse.FileType('w+b'), nargs='?', default=sys.stdout.buffer, help='output file')
     conv_fdt_parser.set_defaults(func=do_conv_fdt)
+
+    def do_conv_adt(args):
+        dt = get_adt(args.infile)
+        restruct.emit(AppleDeviceTree, dt, args.outfile)
+    conv_adt_parser = subparsers.add_parser('to-adt', help='convert to Apple device tree')
+    conv_adt_parser.add_argument('infile', type=argparse.FileType('rb'), help='input file')
+    conv_adt_parser.add_argument('outfile', type=argparse.FileType('w+b'), nargs='?', default=sys.stdout.buffer, help='output file')
+    conv_adt_parser.set_defaults(func=do_conv_adt)
 
     def do_conv_src(args):
         dt = get_adt(args.infile)
