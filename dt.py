@@ -264,42 +264,55 @@ def diff(a, b, path=[]):
     a_props = {p.name: p.value for p in a.properties}
     b_props = {p.name: p.value for p in b.properties}
 
+    removed = []
+    added = []
     for k in a_props:
-        p = '/' + '/'.join(path + [k])
         if k not in b_props:
-            print('--- ' + p)
-            print(dump_value(k, a_props[k]))
+            removed.append((k, a_props[k]))
         else:
             if a_props[k] != b_props[k]:
-                print('--- ' + p)
-                print(dump_value(k, a_props[k]))
-                print('+++ ' + p)
-                print(dump_value(k, b_props[k]))
+                removed.append((k, a_props[k]))
+                added.append((k, b_props[k]))
             del b_props[k]
 
     for k in b_props:
-        p = '/' + '/'.join(path + [k])
+        added.append((k, b_props[k]))
+
+    if removed or added:
+        p = '/' + '/'.join(path)
+        print('--- ' + p)
         print('+++ ' + p)
-        print(dump_value(k, b_props[k]))
+        for (k, v) in removed:
+            print('-' + k + ': ' + dump_value(k, v))
+        for (k, v) in added:
+            print('+' + k + ': ' + dump_value(k, v))
 
     b_children = {}
     for c in b.children:
         name = next(p.value for p in c.properties if p.name == 'name')
         b_children.setdefault(name, []).append(c)
+
     for c in a.children:
-        name = next(p.value for p in c.properties if p.name == 'name')
+        props = {p.name: p.value for p in c.properties}
+        name = props['name']
         p = '/' + '/'.join(path + [name])
         if name not in b_children:
             print('--- ' + p)
-            print(dump(c))
+            print('+++ ' + p + ' (deleted)')
+            for k, v in props.items():
+                print('-' + k + ': ' + dump_value(k, v))
         else:
             diff(c, b_children[name].pop(0), path + [name])
 
     for name, cs in b_children.items():
         for c in cs:
+            props = {p.name: p.value for p in c.properties}
+            name = props['name']
             p = '/' + '/'.join(path + [name])
-            print('+++' + p)
-            print(dump(c))
+            print('---' + p)
+            print('+++' + p + ' (added)')
+            for k, v in props.items():
+                print('+' + k + ': ' + dump_value(k, v))
 
 
 def find(node, path, pname, pvalue):
