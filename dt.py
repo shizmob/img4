@@ -151,13 +151,13 @@ AppleDeviceTree = ADTNode
 
 
 class DeviceTreeRange(restruct.Struct, generics={'ChildAddrSize', 'ParentAddrSize', 'LengthSize'}):
-    child_address:  UInt(ChildAddrSize, order='be')
-    parent_address: UInt(ParentAddrSize, order='be')
-    length:         UInt(LengthSize, order='be')
+    child_address:  UInt(ChildAddrSize)
+    parent_address: UInt(ParentAddrSize)
+    length:         UInt(LengthSize)
 
 class DeviceTreeRegister(restruct.Struct, generics={'AddrSize', 'LengthSize'}):
-    address:  UInt(AddrSize, order='be')
-    length:   UInt(LengthSize, order='be')
+    address:  UInt(AddrSize)
+    length:   UInt(LengthSize)
 
 
 
@@ -312,8 +312,8 @@ def regs(node, path):
         props = {p.name: p.value for p in node.properties}
 
         if '#address-cells' in props and '#size-cells' in props:
-            this_addr_size = restruct.parse(restruct.UInt(32, order='be'), props['#address-cells'])
-            this_size_size = restruct.parse(restruct.UInt(32, order='be'), props['#size-cells'])
+            this_addr_size = props['#address-cells']
+            this_size_size = props['#size-cells']
             if 'ranges' in props:
                 range_spec = DeviceTreeRange[this_addr_size * 32, last_addr_size * 32, this_size_size * 32]
                 ranges = restruct.parse(restruct.Arr(range_spec), props['ranges'])
@@ -331,8 +331,8 @@ def regs(node, path):
 
         for child in node.children:
             cprops = {p.name: p.value for p in child.properties}
-            cname = cprops['name'].rstrip(b'\x00')
-            if cname == path[0].encode('ascii'):
+            cname = cprops['name']
+            if cname == path[0]:
                 path.pop(0)
                 node = child
                 break
@@ -351,7 +351,7 @@ def regs(node, path):
                 if addrspace:
                     raise ValueError('could not map child to parent address space')
 
-        print(hex(addr), r.length)
+        print(hex(addr), reg.length)
 
 
 if __name__ == '__main__':
@@ -416,7 +416,7 @@ if __name__ == '__main__':
 
     def do_regs(args):
         dt = get_adt(args.infile)
-        path = args.path.split('/')
+        path = args.path.lstrip('/').split('/')
         regs(dt, path)
     regs_parser = subparsers.add_parser('regs', help='show calculated register ranges for given path')
     regs_parser.add_argument('infile', type=argparse.FileType('rb'), help='input file')
