@@ -36,6 +36,9 @@ def determine_type(k, v):
     if len(v) == 4:
         # not a fan of this heuristic
         return DeviceTreeType.U32
+    if not v:
+        # or this one
+        return DeviceTreeType.Empty
     return DeviceTreeType.Opaque
 
 def determine_reverse_type(k, v):
