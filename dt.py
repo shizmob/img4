@@ -405,7 +405,7 @@ def regs(node, path):
                 if addrspace:
                     raise ValueError('could not map child to parent address space')
 
-        rs.append((addr, reg.lenth))
+        rs.append((addr, reg.length))
 
     return rs
 
