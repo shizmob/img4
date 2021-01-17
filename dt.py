@@ -294,8 +294,8 @@ def show_node_changed(n, path, prefix, label, recursive=True):
             show_node_changed(c, path + [name], prefix, label)
 
 def diff(a, b, path=[]):
-    a_props = {p.name: p.value for p in a.properties}
-    b_props = {p.name: p.value for p in b.properties}
+    a_props = {p.name: p.value for p in a.properties} if a else {}
+    b_props = {p.name: p.value for p in b.properties} if b else {}
 
     removed = []
     added = []
@@ -321,11 +321,11 @@ def diff(a, b, path=[]):
             print('+' + k + ': ' + dump_value(k, v))
 
     b_children = {}
-    for c in b.children:
+    for c in (b.children if b else []):
         name = next(p.value for p in c.properties if p.name == 'name')
         b_children.setdefault(name, []).append(c)
 
-    for c in a.children:
+    for c in (a.children if a else []):
         props = {p.name: p.value for p in c.properties}
         name = props['name']
         p = '/' + '/'.join(path + [name])
@@ -463,6 +463,38 @@ if __name__ == '__main__':
     find_parser.add_argument('property', help='name or property of node to find')
     find_parser.set_defaults(func=do_find)
 
+    def do_diff(args):
+        a = get_adt(args.a)
+        b = get_adt(args.b)
+        if args.path:
+            path = args.path.lstrip('/').split('/')
+            ap = get(a, path)
+            bp = get(b, path)
+            if not ap:
+                a = None
+            else:
+                a = ap[0]
+            if not bp:
+                b = None
+            else:
+                b = bp[0]
+        diff(a, b)
+    diff_parser = subparsers.add_parser('diff', help='show the difference between two device trees')
+    diff_parser.add_argument('a', type=argparse.FileType('rb'), help='first file')
+    diff_parser.add_argument('b', type=argparse.FileType('rb'), help='second file')
+    diff_parser.add_argument('path', nargs='?', help='path to show differences for')
+    diff_parser.set_defaults(func=do_diff)
+
+    def do_regs(args):
+        dt = get_adt(args.infile)
+        path = args.path.lstrip('/').split('/')
+        for (addr, size) in regs(dt, path):
+            print(hex(addr), size)
+    regs_parser = subparsers.add_parser('regs', help='show calculated register ranges for given path')
+    regs_parser.add_argument('infile', type=argparse.FileType('rb'), help='input file')
+    regs_parser.add_argument('path', help='path to the device node, nodes separated by \'/\' (example: arm-io/i2c2/audio-codec-output)')
+    regs_parser.set_defaults(func=do_regs)
+
     def do_conv_fdt(args):
         adt = restruct.parse(AppleDeviceTree, args.infile)
         n, dt = to_fdt(adt)
@@ -488,25 +520,6 @@ if __name__ == '__main__':
     conv_src_parser.add_argument('infile', type=argparse.FileType('rb'), help='input file')
     conv_src_parser.add_argument('outfile', type=argparse.FileType('w'), nargs='?', default=sys.stdout, help='output file')
     conv_src_parser.set_defaults(func=do_conv_src)
-
-    def do_diff(args):
-        a = get_adt(args.a)
-        b = get_adt(args.b)
-        diff(a, b)
-    diff_parser = subparsers.add_parser('diff', help='visually show the difference between two device trees')
-    diff_parser.add_argument('a', type=argparse.FileType('rb'), help='first file')
-    diff_parser.add_argument('b', type=argparse.FileType('rb'), help='second file')
-    diff_parser.set_defaults(func=do_diff)
-
-    def do_regs(args):
-        dt = get_adt(args.infile)
-        path = args.path.lstrip('/').split('/')
-        for (addr, size) in regs(dt, path):
-            print(hex(addr), size)
-    regs_parser = subparsers.add_parser('regs', help='show calculated register ranges for given path')
-    regs_parser.add_argument('infile', type=argparse.FileType('rb'), help='input file')
-    regs_parser.add_argument('path', help='path to the device node, nodes separated by \'/\' (example: arm-io/i2c2/audio-codec-output)')
-    regs_parser.set_defaults(func=do_regs)
 
     args = parser.parse_args()
     if not args.func:
