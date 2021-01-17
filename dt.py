@@ -288,6 +288,7 @@ def show_node_changed(n, path, prefix, label, recursive=True):
     print('+++ ' + p + ' (' + label + ')')
     for k, v in props.items():
         print(prefix + k + ': ' + dump_value(k, v))
+    print()
 
     if recursive:
         for c in n.children:
@@ -319,6 +320,7 @@ def diff(a, b, path=[]):
             print('-' + k + ': ' + dump_value(k, v))
         for (k, v) in added:
             print('+' + k + ': ' + dump_value(k, v))
+        print()
 
     b_children = {}
     for c in (b.children if b else []):
