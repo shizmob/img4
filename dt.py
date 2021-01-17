@@ -206,7 +206,7 @@ def get(node, path):
     return results
 
 
-def to_adt(nodes, depth=0):
+def from_fdt(nodes, depth=0):
     node = ADTNode(property_count=0, properties=[], child_count=0, children=[])
 
     assert nodes[0].token == FDTToken.NodeBegin
@@ -221,7 +221,7 @@ def to_adt(nodes, depth=0):
         if nodes[i].token == FDTToken.NodeEnd:
             break
         elif nodes[i].token == FDTToken.NodeBegin:
-            n, child = to_adt(nodes[i:], depth=depth + 1)
+            n, child = from_fdt(nodes[i:], depth=depth + 1)
             i += n
             node.children.append(child)
         elif nodes[i].token == FDTToken.Property:
@@ -414,7 +414,7 @@ if __name__ == '__main__':
     def get_adt(infile):
         try:
             fdt = restruct.parse(FlattenedDeviceTree, infile)
-            _, adt = to_adt(fdt.structs)
+            _, adt = from_fdt(fdt.structs)
             return adt
         except:
             infile.seek(0)
