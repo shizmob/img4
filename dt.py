@@ -260,6 +260,20 @@ def to_dts(node, depth=0):
     return s
 
 
+def show_node_changed(n, path, prefix, label, recursive=True):
+    props = {p.name: p.value for p in n.properties}
+    name = props['name']
+    p = '/' + '/'.join(path + [name])
+
+    print('--- ' + p)
+    print('+++ ' + p + ' (' + label + ')')
+    for k, v in props.items():
+        print(prefix + k + ': ' + dump_value(k, v))
+
+    if recursive:
+        for c in n.children:
+            show_node_changed(c, path + [name], prefix, label)
+
 def diff(a, b, path=[]):
     a_props = {p.name: p.value for p in a.properties}
     b_props = {p.name: p.value for p in b.properties}
@@ -297,22 +311,13 @@ def diff(a, b, path=[]):
         name = props['name']
         p = '/' + '/'.join(path + [name])
         if name not in b_children:
-            print('--- ' + p)
-            print('+++ ' + p + ' (deleted)')
-            for k, v in props.items():
-                print('-' + k + ': ' + dump_value(k, v))
+            show_node_changed(c, path, '-', 'deleted')
         else:
             diff(c, b_children[name].pop(0), path + [name])
 
     for name, cs in b_children.items():
         for c in cs:
-            props = {p.name: p.value for p in c.properties}
-            name = props['name']
-            p = '/' + '/'.join(path + [name])
-            print('---' + p)
-            print('+++' + p + ' (added)')
-            for k, v in props.items():
-                print('+' + k + ': ' + dump_value(k, v))
+            show_node_changed(c, path, '+', 'added')
 
 
 def find(node, path, pname, pvalue):
