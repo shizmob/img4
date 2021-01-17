@@ -187,6 +187,25 @@ def dump(node, depth=0, last=True):
     return s
 
 
+def get(node, path):
+    results = []
+
+    if len(path) == 1:
+        props = {p.name: p for p in node.properties}
+        if path[0] in props:
+            results.append(props[path[0]])
+
+    for c in node.children:
+        props = {p.name: p.value for p in c.properties}
+        if props['name'] == path[0]:
+            if len(path) == 1:
+                results.append(c)
+            else:
+                results.extend(get(c, path[1:]))
+
+    return results
+
+
 def to_adt(nodes, depth=0):
     node = ADTNode(property_count=0, properties=[], child_count=0, children=[])
 
@@ -413,6 +432,21 @@ if __name__ == '__main__':
     dump_parser.add_argument('infile', type=argparse.FileType('rb'), help='input file')
     dump_parser.add_argument('outfile', type=argparse.FileType('w'), nargs='?', default=sys.stdout, help='output file')
     dump_parser.set_defaults(func=do_dump)
+
+    def do_show(args):
+        dt = get_adt(args.infile)
+        path = args.property.lstrip('/').split('/')
+        for value in get(dt, path):
+            if isinstance(value, ADTProperty):
+                print(dump_value(value.name, value.value))
+            else:
+                for p in value.properties:
+                    print(p.name + ': ' + dump_value(p.name, p.value))
+
+    show_parser = subparsers.add_parser('show', help='get value of property or node in device tree')
+    show_parser.add_argument('infile', type=argparse.FileType('rb'), help='input file')
+    show_parser.add_argument('property', help='property path to get')
+    show_parser.set_defaults(func=do_show)
 
     def do_find(args):
         dt = get_adt(args.infile)
