@@ -320,16 +320,18 @@ def diff(a, b, path=[]):
             show_node_changed(c, path, '+', 'added')
 
 
-def find(node, path, pname, pvalue):
+def find(node, pname, pvalue, path=[]):
+    results = []
     props = {p.name: p.value for p in node.properties}
 
     nname = props['name']
     if props.get(pname, None) == pvalue:
-        print('/' + '/'.join(path + [nname]))
-        return
+        results.append(path + [nname])
 
     for c in node.children:
-        find(c, path + [nname], pname, pvalue)
+        results.extend(find(c, pname, pvalue, path + [nname]))
+
+    return results
 
 
 def regs(node, path):
@@ -369,6 +371,7 @@ def regs(node, path):
         else:
             raise ValueError('404')
 
+    rs = []
     for reg in regs:
         addr = reg.address
 
@@ -381,7 +384,9 @@ def regs(node, path):
                 if addrspace:
                     raise ValueError('could not map child to parent address space')
 
-        print(hex(addr), reg.length)
+        rs.append((addr, reg.lenth))
+
+    return rs
 
 
 if __name__ == '__main__':
@@ -417,7 +422,8 @@ if __name__ == '__main__':
             pn = 'name'
             pv = args.property
         for c in dt.children:
-            find(c, [], pn, pv)
+            for p in find(c, pn, pv):
+                print('/' + '/'.join(p))
     find_parser = subparsers.add_parser('find', help='find node in device tree')
     find_parser.add_argument('infile', type=argparse.FileType('rb'), help='input file')
     find_parser.add_argument('property', help='name or property of node to find')
@@ -461,7 +467,8 @@ if __name__ == '__main__':
     def do_regs(args):
         dt = get_adt(args.infile)
         path = args.path.lstrip('/').split('/')
-        regs(dt, path)
+        for (addr, size) in regs(dt, path):
+            print(hex(addr), size)
     regs_parser = subparsers.add_parser('regs', help='show calculated register ranges for given path')
     regs_parser.add_argument('infile', type=argparse.FileType('rb'), help='input file')
     regs_parser.add_argument('path', help='path to the device node, nodes separated by \'/\' (example: arm-io/i2c2/audio-codec-output)')
