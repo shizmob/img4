@@ -73,7 +73,7 @@ class NVRAMKeyValues(restruct.Type):
     def sizeof(self, value, context):
         if value is not None:
             value = [k.encode('ascii') + b'=' + escape_nvram_value(v) for k, v in value.items()]
-        return restruct._sizeof(spec, value, context)
+        return restruct._sizeof(RawNVRAMKeyValues, value, context)
 
     def default(self, context):
         return {}
