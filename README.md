@@ -61,6 +61,25 @@ positional arguments:
   infile      input device tree file
 ```
 
+# nvram
+
+Raw NVRAM data tool.
+
+## Usage
+
+```
+usage: nvram.py [-h] {dump} ...
+
+work with raw NVRAM data
+
+positional arguments:
+  {dump}      subcommand
+    dump      show all data
+
+optional arguments:
+  -h, --help  show this help message and exit
+```
+
 # License
 
 See `LICENSE.md`.
