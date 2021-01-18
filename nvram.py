@@ -1,3 +1,8 @@
+#!/usr/bin/env python3
+# SPDX-License-Identifier: MIT
+# Greetings to:
+# - hexdump tool of choice
+
 import restruct
 
 

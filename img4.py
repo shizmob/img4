@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # SPDX-License-Identifier: MIT
 # Greetings to:
 # - https://www.theiphonewiki.com/wiki/IMG4_File_Format
