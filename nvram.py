@@ -55,29 +55,12 @@ def unescape_nvram_value(v: bytes) -> bytes:
 
     return res
 
-RawNVRAMKeyValues = restruct.Arr(restruct.Data(), separator=b'\x00', stop_value=b'')
 
-class NVRAMKeyValues(restruct.Type):
-    def parse(self, io, context):
-        values = restruct.parse(RawNVRAMKeyValues, io, context)
-        res = {}
-        for value in values:
-            key, value = value.split(b'=', maxsplit=1)
-            res[key.decode('ascii')] = unescape_nvram_value(value)
-        return res
+class NVRAMKeyValue(restruct.Struct):
+    key:   Str(terminator=b'=')
+    value: Processed(Data(), parse=unescape_nvram_value, emit=escape_nvram_value)
 
-    def emit(self, value, io, context):
-        value = [k.encode('ascii') + b'=' + escape_nvram_value(v) for k, v in value.items()]
-        return restruct.emit(RawNVRAMKeyValues, value, io, context)
-
-    def sizeof(self, value, context):
-        if value is not None:
-            value = [k.encode('ascii') + b'=' + escape_nvram_value(v) for k, v in value.items()]
-        return restruct._sizeof(RawNVRAMKeyValues, value, context)
-
-    def default(self, context):
-        return {}
-
+NVRAMKeyValues = restruct.Arr(NVRAMKeyValue, separator=b'\x00', stop_value=NVRAMKeyValue(key='', value=b''))
 
 class NVRAMHeader(restruct.Struct):
     unk1:  Data(4)
@@ -85,7 +68,7 @@ class NVRAMHeader(restruct.Struct):
 
 class NVRAMSection(restruct.Struct):
     header: NVRAMHeader
-    values: NVRAMKeyValues()
+    values: NVRAMKeyValues
 
 class NVRAM(restruct.Struct):
     header: NVRAMHeader
@@ -108,8 +91,8 @@ if __name__ == '__main__':
             if not name:
                 continue
             print(name + ':')
-            for k, v in section.values.items():
-                print('  ' + k + ': ' + restruct.format_value(v, str))
+            for val in section.values:
+                print('  ' + val.key + ': ' + restruct.format_value(val.value, str))
     dump_parser = subparsers.add_parser('dump', help='show all data')
     dump_parser.add_argument('infile', type=argparse.FileType('rb'), help='input file')
     dump_parser.set_defaults(func=do_dump)
