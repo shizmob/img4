@@ -86,7 +86,10 @@ if __name__ == '__main__':
                 continue
             print(name + ':')
             for val in section.values:
-                print('  ' + val.key + ': ' + restruct.format_value(val.value, str))
+                v = val.value
+                if all(0x20 <= b <= 0x7E for b in v):
+                    v = repr(v.decode('ascii'))
+                print('  ' + val.key + ': ' + restruct.format_value(v, str))
     dump_parser = subparsers.add_parser('dump', help='show all data')
     dump_parser.add_argument('infile', type=argparse.FileType('rb'), help='input file')
     dump_parser.set_defaults(func=do_dump)
