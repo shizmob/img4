@@ -11,29 +11,23 @@ def escape_nvram_value(v: bytes) -> bytes:
 
     i = 0
     while i < len(v):
-        nzeros = 0
-        while i < len(v) and v[i] == 0:
-            nzeros += 1
-            i += 1
+        if v[i] in (0, 0xff):
+            nzeros = len(v[i:]) - len(v[i:].lstrip(b'\x00'))
+            nmax = len(v[i:]) - len(v[i:].lstrip(b'\xff'))
+            i += nzeros + nmax
 
-        nmax = 0
-        while i < len(v) and v[i] == 0xff:
-            nmax += 1
-            i += 1
-
-        if nzeros == 0 and nmax == 0:
+            while nzeros > 0:
+                res.append(0xff)
+                res.append(nzeros % 0x80)
+                nzeros -= 0x7F
+            while nmax > 0:
+                res.append(0xff)
+                res.append(0x80 + nmax % 0x80)
+                nmax -= 0x7F
+        else:
             res.append(v[i])
             i += 1
 
-        while nzeros > 0:
-            res.append(0xff)
-            res.append(nzeros % 0x80)
-            nzeros -= 0x7F
-        while nmax > 0:
-            res.append(0xff)
-            res.append(0x80 + nmax % 0x80)
-            nmax -= 0x7F
-        
     return res
 
 def unescape_nvram_value(v: bytes) -> bytes:
@@ -60,7 +54,7 @@ class NVRAMKeyValue(restruct.Struct):
     key:   Str(terminator=b'=')
     value: Processed(Data(), parse=unescape_nvram_value, emit=escape_nvram_value)
 
-NVRAMKeyValues = restruct.Arr(NVRAMKeyValue, separator=b'\x00', stop_value=NVRAMKeyValue(key='', value=b''))
+NVRAMKeyValues = restruct.Arr(NVRAMKeyValue, separator=b'\x00')
 
 class NVRAMHeader(restruct.Struct):
     unk1:  Data(4)
